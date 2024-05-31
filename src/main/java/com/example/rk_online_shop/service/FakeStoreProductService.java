@@ -3,7 +3,6 @@ package com.example.rk_online_shop.service;
 import com.example.rk_online_shop.dto.FakeStoreProductDto;
 import com.example.rk_online_shop.exceptions.ProductNotFoundException;
 import com.example.rk_online_shop.model.Product;
-import com.example.rk_online_shop.repositories.projections.CategoryProjection;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
@@ -70,19 +69,29 @@ public class FakeStoreProductService  implements ProductService{
     }
 
     @Override
-    public Product deleteProduct(Long productId) {
-        restTemplate.delete("https://fakestoreapi.com/products/" + productId);
-       return null;
+    public Product deleteProduct(Long productId) throws ProductNotFoundException {
+        FakeStoreProductDto  fkdto = restTemplate.getForObject(
+                "https://fakestoreapi.com/products/" + productId,
+                FakeStoreProductDto.class
+        );
+        if(fkdto == null){
+            throw new ProductNotFoundException("Product not found " + "with id " + productId);
+        }
+        else{
+            restTemplate.delete("https://fakestoreapi.com/products/" + productId);
+            return fkdto.toProduct();
+        }
     }
 
     @Override
     public List<Product> getProductByCategory(String category) {
-        String url = "https://fakestoreapi.com/products/category/" + category; // Replace with actual API endpoint if needed
+        String url = "https://fakestoreapi.com/products/category/" + category;
         FakeStoreProductDto[] fklist = restTemplate.getForObject(url, FakeStoreProductDto[].class);
         return Arrays.stream(fklist).map(FakeStoreProductDto::toProduct).toList();    }
 
     @Override
-    public List<CategoryProjection> getAllCategory() {
-        return List.of();
+    public List getAllCategory() {
+        String url = "https://fakestoreapi.com/products/categories";
+        return restTemplate.getForObject(url, List.class);
     }
 }
